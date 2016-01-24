@@ -2,16 +2,24 @@ package com.developpeurgirondin.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.developpeurgirondin.MyDemoGame;
 import com.developpeurgirondin.entities.Character;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.badlogic.gdx.Input.Keys;
 
@@ -26,10 +34,14 @@ public class GameScreen implements Screen {
     private OrthogonalTiledMapRenderer renderer;
     private OrthographicCamera camera;
     private Character player;
+    private List<Character> pnjList;
     TiledMapTileLayer collisionLayer;
     TiledMapTileLayer detailLayer;
     TiledMapTileLayer fondLayer;
     TiledMapTileLayer overHeadLayer;
+    private Stage stage;
+    private Label texte;
+    private boolean spacePressed = false;
 
     public GameScreen(MyDemoGame game) {
         this.game = game;
@@ -46,6 +58,16 @@ public class GameScreen implements Screen {
         player.setPosition(new Vector2(1024, 400));
         player.setWidth(32f);
         player.setHeight(32f);
+
+        stage = new Stage();
+
+        pnjList = new ArrayList<Character>();
+        Character pnj1 = new Character("graphics/characters/player1.txt", "player1");
+        pnj1.setPosition(new Vector2(450, 400));
+        pnj1.setWidth(32f);
+        pnj1.setHeight(32f);
+        pnj1.setFacing(Character.Facing.Bottom);
+        pnjList.add(pnj1);
     }
 
     @Override
@@ -56,21 +78,28 @@ public class GameScreen implements Screen {
         fondLayer = (TiledMapTileLayer) map.getLayers().get(0);
         overHeadLayer = (TiledMapTileLayer) map.getLayers().get(3);
 
-        /**** dessine le joueur ***/
+
         Batch batch;
         batch = renderer.getBatch();
         batch.begin();
+        /**** dessine le terrain ***/
         renderer.renderTileLayer(fondLayer);//rendu de la carte
         renderer.renderTileLayer(detailLayer);//rendu de la carte
         renderer.renderTileLayer(collisionLayer);//rendu de la carte
 
-        if(player.getState().equals(Character.State.Walking)) {
+        /**** dessine les pnj ***/
+        for (Character pnj : pnjList) {
+            pnj.draw(batch);
+        }
+        /**** dessine le joueur ***/
+        if (player.getState().equals(Character.State.Walking)) {
             player.setStateTime(player.getStateTime() + Gdx.graphics.getDeltaTime());
         } else {
             player.setStateTime(0f);
         }
         player.draw(batch);
         batch.end();
+
 
         camera.update();//important sinon pas de prise en compte des input camera !!
         renderer.setView(camera);//on indique la caméra utilisée pour coupler les systèmes de coordonnées
@@ -82,13 +111,30 @@ public class GameScreen implements Screen {
         if (Gdx.input.isKeyPressed(Keys.NUMPAD_9)) {
             camera.zoom += 0.01;
         }
-        /*********** tuile occupée par le joueur ******/
+        /*********** Prise en compte de l'input du joueur******/
         inputPlayer();
 
         batch = renderer.getBatch();
         batch.begin();
-        renderer.renderTileLayer(overHeadLayer);//rendu de la carte
+        renderer.renderTileLayer(overHeadLayer);//rendu des elements au premier plan
         batch.end();
+
+        if (spacePressed) {
+            texte = new Label("Salut, je suis un PNJ et je ne sais pas quoi te dire alors presse la touche entrer.", new Label.LabelStyle(new BitmapFont(), new Color(Color.WHITE)));
+            texte.setPosition((this.camera.viewportWidth / 2)- texte.getWidth()/2, (this.camera.viewportHeight/2)-texte.getHeight()/2);
+            stage.addActor(texte);
+            Texture background = new Texture(Gdx.files.internal("graphics/background/parchemin.gif"));
+            stage.getBatch().begin();
+            stage.getBatch().draw(background, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());//corrige sans caméra !!
+            stage.getBatch().end();
+
+            stage.act(Gdx.graphics.getDeltaTime());
+            stage.draw();
+            if (Gdx.input.isKeyPressed(Keys.ENTER)) {
+                spacePressed = false;
+            }
+        }
+
     }
 
     @Override
@@ -122,35 +168,43 @@ public class GameScreen implements Screen {
         /**** commandes du joueur *****/
         if (Gdx.input.isKeyPressed(Keys.UP)) {
             player.walking(2, Character.Facing.Top);
-            camera.translate(0,2,0);
-            if(player.isInCollisionWithLayer(collisionLayer,TILE_SIZE)) {
+            camera.translate(0, 2, 0);
+            if (player.isInCollisionWithLayer(collisionLayer, pnjList, TILE_SIZE)) {
                 player.walking(-2, Character.Facing.Top);
-                camera.translate(0,-2,0);
+                camera.translate(0, -2, 0);
             }
         } else if (Gdx.input.isKeyPressed(Keys.DOWN)) {
             player.walking(2, Character.Facing.Bottom);
-            camera.translate(0,-2,0);
-            if(player.isInCollisionWithLayer(collisionLayer, TILE_SIZE)) {
+            camera.translate(0, -2, 0);
+            if (player.isInCollisionWithLayer(collisionLayer, pnjList, TILE_SIZE)) {
                 player.walking(-2, Character.Facing.Bottom);
-                camera.translate(0,2,0);
+                camera.translate(0, 2, 0);
             }
         } else if (Gdx.input.isKeyPressed(Keys.LEFT)) {
             player.walking(2, Character.Facing.Left);
-            camera.translate(-2,0,0);
-            if(player.isInCollisionWithLayer(collisionLayer, TILE_SIZE)) {
+            camera.translate(-2, 0, 0);
+            if (player.isInCollisionWithLayer(collisionLayer, pnjList, TILE_SIZE)) {
                 player.walking(-2, Character.Facing.Left);
-                camera.translate(2,0,0);
+                camera.translate(2, 0, 0);
             }
             player.setFacing(Character.Facing.Left);
         } else if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
             player.walking(2, Character.Facing.Right);
-            camera.translate(2,0,0);
-            if(player.isInCollisionWithLayer(collisionLayer, TILE_SIZE)) {
+            camera.translate(2, 0, 0);
+            if (player.isInCollisionWithLayer(collisionLayer, pnjList, TILE_SIZE)) {
                 player.walking(-2, Character.Facing.Right);
-                camera.translate(-2,0,0);
+                camera.translate(-2, 0, 0);
             }
             player.setFacing(Character.Facing.Right);
         } else {
+            if (Gdx.input.isKeyPressed(Keys.SPACE) && !spacePressed) {
+                if (player.isFacingPNJ(pnjList)) {
+                    spacePressed = true;
+
+
+                }
+            }
+
             player.standing();
         }
     }
