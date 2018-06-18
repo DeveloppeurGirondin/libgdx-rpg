@@ -1,5 +1,7 @@
 package com.developpeurgirondin.screens;
 
+import static com.badlogic.gdx.Input.Keys;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
@@ -17,11 +19,8 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.developpeurgirondin.MyDemoGame;
 import com.developpeurgirondin.entities.Character;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.badlogic.gdx.Input.Keys;
 
 /**
  * @author developpeurgirondin.
@@ -120,10 +119,10 @@ public class GameScreen implements Screen {
         batch.end();
 
         if (spacePressed) {
-            texte = new Label("Salut, je suis un PNJ et je ne sais pas quoi te dire alors presse la touche entrer.", new Label.LabelStyle(new BitmapFont(), new Color(Color.WHITE)));
+            texte = new Label("Salut, je suis un PNJ et je ne sais pas quoi dire alors presse entrer.", new Label.LabelStyle(new BitmapFont(), new Color(Color.LIGHT_GRAY)));
             texte.setPosition((this.camera.viewportWidth / 2)- texte.getWidth()/2, (this.camera.viewportHeight/2)-texte.getHeight()/2);
             stage.addActor(texte);
-            Texture background = new Texture(Gdx.files.internal("graphics/background/parchemin.gif"));
+            Texture background = new Texture(Gdx.files.internal("graphics/background/parchemin.png"));
             stage.getBatch().begin();
             stage.getBatch().draw(background, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());//corrige sans caméra !!
             stage.getBatch().end();
